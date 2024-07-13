@@ -15,5 +15,7 @@ fun App() {
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
         App()
+        val simulator = TrackingSimulator()
+        simulator.runSimulation("tracking.txt")
     }
 }

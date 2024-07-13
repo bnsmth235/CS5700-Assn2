@@ -21,7 +21,7 @@ class Shipment(
                 expectedDeliveryDate = update.expectedDeliveryDate.toString()
             }
             is LocationUpdate -> {
-                // Handle location update if needed
+                location = update.location
             }
             is NoteAddedUpdate -> {
                 notes.add(update.note)

@@ -1,5 +1,10 @@
+import java.io.File
+import kotlinx.coroutines.*
+import java.lang.Exception
+
 class TrackingSimulator {
     private val shipments = mutableListOf<Shipment>()
+    private var simulationJob: Job? = null
 
     fun findShipment(id: String): Shipment? = shipments.find { it.id == id }
 
@@ -7,20 +12,76 @@ class TrackingSimulator {
         shipments.add(shipment)
     }
 
-    fun runSimulation() {
-        // Logic to read file and update shipments
-        // For each line in the file:
-        // val (type, id, timestamp, info) = parseLine(line)
-        // val shipment = findShipment(id) ?: Shipment(id).also { addShipment(it) }
-        // when (type) {
-        //     "created" -> shipment.addUpdate(CreatedUpdate(timestamp.toLong(), shipment.status))
-        //     "shipped" -> shipment.addUpdate(ShippedUpdate(timestamp.toLong(), shipment.status, info.toLong()))
-        //     "location" -> shipment.addUpdate(LocationUpdate(timestamp.toLong(), shipment.status, info))
-        //     "delivered" -> shipment.addUpdate(DeliveredUpdate(timestamp.toLong(), shipment.status))
-        //     "delayed" -> shipment.addUpdate(DelayedUpdate(timestamp.toLong(), shipment.status, info.toLong()))
-        //     "lost" -> shipment.addUpdate(LostUpdate(timestamp.toLong(), shipment.status))
-        //     "canceled" -> shipment.addUpdate(CanceledUpdate(timestamp.toLong(), shipment.status))
-        //     "noteadded" -> shipment.addUpdate(NoteAddedUpdate(timestamp.toLong(), shipment.status, info))
-        // }
+    fun runSimulation(filename: String) {
+        // Ensure only one simulation is running at a time
+        if (simulationJob?.isActive == true) {
+            println("Simulation is already running.")
+            return
+        }
+
+        simulationJob = GlobalScope.launch {
+            try {
+                File(filename).useLines { lines ->
+                    lines.forEach { line ->
+                        processLine(line)
+                        delay(1000) // Process one line per second
+                    }
+                }
+                println("Simulation completed.")
+            } catch (e: Exception) {
+                println("Error in simulation: ${e.message}")
+            }
+        }
+    }
+
+    fun stopSimulation() {
+        simulationJob?.cancel()
+    }
+
+    private fun processLine(line: String) {
+        val (type, id, timestamp, info) = parseLine(line)
+        val shipmentUpdate = when (type) {
+            "created" -> CreatedUpdate(timestamp.toLong(), id)
+            "shipped" -> ShippedUpdate(timestamp.toLong(), id, info.toLong())
+            "location" -> LocationUpdate(timestamp.toLong(), id, info)
+            "delivered" -> DeliveredUpdate(timestamp.toLong(), id)
+            "delayed" -> DelayedUpdate(timestamp.toLong(), id, info.toLong())
+            "lost" -> LostUpdate(timestamp.toLong(), id)
+            "canceled" -> CanceledUpdate(timestamp.toLong(), id)
+            "noteadded" -> NoteAddedUpdate(timestamp.toLong(), id, info)
+            else -> throw IllegalArgumentException("Invalid shipment update type: $type")
+        }
+
+        val shipment = findShipment(id)
+        if (shipment == null) {
+            var location = "N/A"
+            var deliveryDate = "N/A"
+            val notes = mutableListOf<String>()
+            val shippingUpdates = mutableListOf<String>()
+
+            when (shipmentUpdate) {
+                is LocationUpdate -> location = shipmentUpdate.location
+                is ShippedUpdate -> deliveryDate = shipmentUpdate.expectedDeliveryDate.toString()
+                is DelayedUpdate -> deliveryDate = shipmentUpdate.expectedDeliveryDate.toString()
+                is NoteAddedUpdate -> notes.add(shipmentUpdate.note)
+            }
+
+            addShipment(
+                Shipment(
+                    id,
+                    shipmentUpdate.newStatus,
+                    location,
+                    deliveryDate,
+                    notes,
+                    shippingUpdates
+                )
+            )
+        } else {
+            shipment.addUpdate(shipmentUpdate)
+        }
+    }
+
+    private fun parseLine(line: String): List<String> {
+        return line.split(",")
     }
 }
