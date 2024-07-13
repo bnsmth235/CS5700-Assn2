@@ -1,52 +1,58 @@
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+
 class TrackerViewHelper {
-    var shipmentId: String = ""
-        private set
-    var shipmentNotes: List<String> = listOf()
-        private set
-    var shipmentUpdateHistory: List<String> = listOf()
-        private set
-    var expectedShipmentDeliveryDate: String = ""
-        private set
-    var shipmentStatus: String = ""
-        private set
+    private val _shipmentId = mutableStateOf("")
+    val shipmentId: State<String> = _shipmentId
 
-    private val observers = mutableListOf<(Shipment) -> Unit>()
+    private val _shipmentLocation = mutableStateOf("")
+    val shipmentLocation: State<String> = _shipmentLocation
 
-    fun addObserver(observer: (Shipment) -> Unit) {
-        observers.add(observer)
-    }
+    private val _shipmentNotes = mutableStateOf(listOf<String>())
+    val shipmentNotes: State<List<String>> = _shipmentNotes
 
-    private fun notifyObservers(shipment: Shipment) {
-        observers.forEach { it(shipment) }
-    }
+    private val _shipmentUpdateHistory = mutableStateOf(listOf<String>())
+    val shipmentUpdateHistory: State<List<String>> = _shipmentUpdateHistory
+
+    private val _expectedShipmentDeliveryDate = mutableStateOf("")
+    val expectedShipmentDeliveryDate: State<String> = _expectedShipmentDeliveryDate
+
+    private val _shipmentStatus = mutableStateOf("")
+    val shipmentStatus: State<String> = _shipmentStatus
+
+    private var currentShipment: Shipment? = null
 
     fun trackShipment(id: String) {
-        val shipment = TrackingSimulator.findShipment(id)
-        if (shipment != null) {
-            shipmentId = id
-            shipmentNotes = shipment.notes
-            shipmentUpdateHistory = shipment.updateHistory.map { update ->
-                "Shipment went from ${update.previousStatus} to ${update.newStatus} on ${update.updateTimeStamp}"
-            }
-            expectedShipmentDeliveryDate = shipment.expectedDeliveryDateTimestamp.toString()
-            shipmentStatus = shipment.status
-            addObserver { updatedShipment ->
-                shipmentNotes = updatedShipment.notes
-                shipmentUpdateHistory = updatedShipment.updateHistory.map { update ->
-                    "Shipment went from ${update.previousStatus} to ${update.newStatus} on ${update.updateTimeStamp}"
-                }
-                expectedShipmentDeliveryDate = updatedShipment.expectedDeliveryDateTimestamp.toString()
-                shipmentStatus = updatedShipment.status
-                // Trigger UI update here if needed
-            }
-            notifyObservers(shipment)
-        } else {
-            // Handle shipment not found
+        // Simulate tracking a shipment
+        currentShipment = Shipment(id, "created", "N/A", "N/A")
+        currentShipment?.let { shipment ->
+            _shipmentId.value = shipment.id
+            _shipmentStatus.value = shipment.status
+            _expectedShipmentDeliveryDate.value = shipment.expectedDeliveryDate
+            _shipmentNotes.value = shipment.notes
+            _shipmentUpdateHistory.value = shipment.updateHistory
         }
     }
 
     fun stopTracking(id: String) {
-        // Logic to stop tracking shipment
-        // Remove observer or clear state if needed
+        // Simulate stopping tracking of a shipment
+        if (_shipmentId.value == id) {
+            _shipmentId.value = ""
+            _shipmentStatus.value = ""
+            _expectedShipmentDeliveryDate.value = ""
+            _shipmentNotes.value = listOf()
+            _shipmentUpdateHistory.value = listOf()
+            currentShipment = null
+        }
+    }
+
+    fun addUpdate(update: ShippingUpdate) {
+        currentShipment?.addUpdate(update)
+        currentShipment?.let { shipment ->
+            _shipmentStatus.value = shipment.status
+            _expectedShipmentDeliveryDate.value = shipment.expectedDeliveryDate
+            _shipmentNotes.value = shipment.notes
+            _shipmentUpdateHistory.value = shipment.updateHistory
+        }
     }
 }
