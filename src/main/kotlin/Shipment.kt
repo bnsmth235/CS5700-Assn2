@@ -21,6 +21,7 @@ class Shipment(
     }
 
     private fun notifyObservers() {
+        println("Notifying observers of shipment $id")
         observers.forEach { it(this) }
     }
 

@@ -16,7 +16,8 @@ class TrackerViewHelper(private val trackingSimulator: TrackingSimulator) {
                         // Update the tracked shipment in the list
                         val index = _trackedShipments.indexOfFirst { it.id == updatedShipment.id }
                         if (index != -1) {
-                            _trackedShipments[index] = updatedShipment
+                            _trackedShipments.remove(_trackedShipments[index])
+                            _trackedShipments.add(index, updatedShipment)
                         }
                     }
                 }

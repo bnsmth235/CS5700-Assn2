@@ -55,19 +55,17 @@ class UserInterface(private val simulator: TrackingSimulator) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // Display tracked shipments
-            DisplayTrackedShipments()
+            DisplayTrackedShipments(trackerViewHelper.trackedShipments)
         }
     }
 
     @Composable
-    private fun DisplayTrackedShipments() {
+    private fun DisplayTrackedShipments(trackedShipments: List<Shipment>) {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
         ) {
-            // Use snapshotStateListOf to ensure proper recomposition
-            val shipments = trackerViewHelper.trackedShipments.toList()
-            shipments.forEach { shipment ->
+            trackedShipments.forEach { shipment ->
                 ShipmentCard(shipment, onRemove = { trackerViewHelper.stopTracking(shipment.id) })
                 Spacer(modifier = Modifier.height(8.dp))
             }
