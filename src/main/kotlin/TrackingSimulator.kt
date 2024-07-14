@@ -1,6 +1,7 @@
 import java.io.File
 import kotlinx.coroutines.*
 import java.nio.file.Paths
+import java.time.LocalDateTime
 
 class TrackingSimulator {
     private val shipments = mutableListOf<Shipment>()
@@ -50,8 +51,9 @@ class TrackingSimulator {
         var shipment = findShipment(id)
 
         if (shipment == null) {
+            // Default values for a new shipment
             var location = "N/A"
-            var deliveryDate = "N/A"
+            var deliveryDate = LocalDateTime.MIN
             val notes = mutableListOf<String>()
             val shippingUpdates = mutableListOf<String>()
 

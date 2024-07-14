@@ -6,6 +6,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class UserInterface(private val simulator: TrackingSimulator) {
     private val trackerViewHelper = TrackerViewHelper(simulator)
@@ -39,6 +42,7 @@ class UserInterface(private val simulator: TrackingSimulator) {
                         } catch (e: Exception) {
                             errorMessage = "Shipment not found."
                         }
+                        trackingId = ""
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -66,14 +70,14 @@ class UserInterface(private val simulator: TrackingSimulator) {
                 .verticalScroll(rememberScrollState())
         ) {
             trackedShipments.forEach { shipment ->
-                ShipmentCard(shipment, onRemove = { trackerViewHelper.stopTracking(shipment.id) })
+                createShipmentCard(shipment, onRemove = { trackerViewHelper.stopTracking(shipment.id) })
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 
     @Composable
-    private fun ShipmentCard(shipment: Shipment, onRemove: () -> Unit) {
+    private fun createShipmentCard(shipment: Shipment, onRemove: () -> Unit) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = 4.dp
@@ -84,7 +88,8 @@ class UserInterface(private val simulator: TrackingSimulator) {
                 Text("Shipment ID: ${shipment.id}")
                 Text("Status: ${shipment.status}")
                 Text("Location: ${shipment.location}")
-                Text("Expected Delivery Date: ${shipment.expectedDeliveryDate}")
+                val expectedDeliveryDate = if (shipment.expectedDeliveryDate == LocalDateTime.MIN) "N/A" else shipment.expectedDeliveryDate.toString()
+                Text("Expected Delivery Date: $expectedDeliveryDate")
 
                 Spacer(modifier = Modifier.height(8.dp))
 

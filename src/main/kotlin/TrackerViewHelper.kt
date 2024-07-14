@@ -2,22 +2,21 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 
 class TrackerViewHelper(private val trackingSimulator: TrackingSimulator) {
-    private val _trackedShipments = mutableStateListOf<Shipment>()
-    val trackedShipments: SnapshotStateList<Shipment> = _trackedShipments
+    val trackedShipments: SnapshotStateList<Shipment> = mutableStateListOf()
 
     fun trackShipment(id: String) {
         try {
             val shipment = trackingSimulator.findShipment(id)
             if (shipment != null) {
-                if (!_trackedShipments.contains(shipment)) {
-                    _trackedShipments.add(shipment)
+                if (!trackedShipments.contains(shipment)) {
+                    trackedShipments.add(shipment)
                     // Subscribe to changes in the shipment
                     shipment.addObserver { updatedShipment ->
                         // Update the tracked shipment in the list
-                        val index = _trackedShipments.indexOfFirst { it.id == updatedShipment.id }
+                        val index = trackedShipments.indexOfFirst { it.id == updatedShipment.id }
                         if (index != -1) {
-                            _trackedShipments.remove(_trackedShipments[index])
-                            _trackedShipments.add(index, updatedShipment)
+                            trackedShipments.remove(trackedShipments[index])
+                            trackedShipments.add(index, updatedShipment)
                         }
                     }
                 }
@@ -30,10 +29,10 @@ class TrackerViewHelper(private val trackingSimulator: TrackingSimulator) {
     }
 
     fun stopTracking(id: String) {
-        val shipmentToRemove = _trackedShipments.find { it.id == id }
+        val shipmentToRemove = trackedShipments.find { it.id == id }
         shipmentToRemove?.let {
-            it.removeObserver { /* Handle observer removal if needed */ }
-            _trackedShipments.remove(it)
+            it.removeObserver { /* no action needed */ }
+            trackedShipments.remove(it)
         }
     }
 }

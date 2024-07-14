@@ -1,10 +1,13 @@
 import androidx.compose.runtime.mutableStateListOf
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class Shipment(
     val id: String,
     var status: String,
     var location: String,
-    var expectedDeliveryDate: String,
+    var expectedDeliveryDate: LocalDateTime,
     var notes: MutableList<String> = mutableStateListOf(),
     var updateHistory: MutableList<String> = mutableStateListOf()
 ) {
@@ -28,14 +31,14 @@ class Shipment(
     // Method to add an update and notify observers
     fun addUpdate(update: ShippingUpdate) {
         status = update.newStatus
-        updateHistory.add("Shipment went from ${update.previousStatus} to ${update.newStatus} on ${update.updateTimeStamp}")
+        updateHistory.add("Shipment went from ${update.previousStatus} to ${update.newStatus} on ${convertLongToDateTime(update.updateTimeStamp)}")
 
         when (update) {
             is ShippedUpdate -> {
-                expectedDeliveryDate = update.expectedDeliveryDate.toString()
+                expectedDeliveryDate = convertLongToDateTime(update.expectedDeliveryDate)
             }
             is DelayedUpdate -> {
-                expectedDeliveryDate = update.expectedDeliveryDate.toString()
+                expectedDeliveryDate = convertLongToDateTime(update.expectedDeliveryDate)
             }
             is LocationUpdate -> {
                 location = update.location
@@ -47,5 +50,11 @@ class Shipment(
         }
 
         notifyObservers()
+    }
+
+        fun convertLongToDateTime(timestamp: Long): LocalDateTime {
+            val instant = Instant.ofEpochMilli(timestamp)
+            val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+            return dateTime
     }
 }
