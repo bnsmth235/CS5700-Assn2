@@ -1,7 +1,7 @@
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 
-class TrackerViewHelper(private val trackingSimulator: TrackingSimulator) {
+open class TrackerViewHelper(private val trackingSimulator: TrackingSimulator) {
     val trackedShipments: SnapshotStateList<Shipment> = mutableStateListOf()
 
     fun trackShipment(id: String) {

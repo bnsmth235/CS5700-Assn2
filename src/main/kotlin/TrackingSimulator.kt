@@ -3,7 +3,7 @@ import kotlinx.coroutines.*
 import java.nio.file.Paths
 import java.time.LocalDateTime
 
-class TrackingSimulator {
+open class TrackingSimulator {
     private val shipments = mutableListOf<Shipment>()
     private var simulationJob: Job? = null
 

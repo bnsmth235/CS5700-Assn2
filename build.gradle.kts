@@ -21,6 +21,8 @@ dependencies {
     // (in a separate module for demo project and in testMain).
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:3.12.4")
 }
 
 compose.desktop {
