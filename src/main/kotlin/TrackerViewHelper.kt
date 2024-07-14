@@ -1,58 +1,38 @@
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 
-class TrackerViewHelper {
-    private val _shipmentId = mutableStateOf("")
-    val shipmentId: State<String> = _shipmentId
-
-    private val _shipmentLocation = mutableStateOf("")
-    val shipmentLocation: State<String> = _shipmentLocation
-
-    private val _shipmentNotes = mutableStateOf(listOf<String>())
-    val shipmentNotes: State<List<String>> = _shipmentNotes
-
-    private val _shipmentUpdateHistory = mutableStateOf(listOf<String>())
-    val shipmentUpdateHistory: State<List<String>> = _shipmentUpdateHistory
-
-    private val _expectedShipmentDeliveryDate = mutableStateOf("")
-    val expectedShipmentDeliveryDate: State<String> = _expectedShipmentDeliveryDate
-
-    private val _shipmentStatus = mutableStateOf("")
-    val shipmentStatus: State<String> = _shipmentStatus
-
-    private var currentShipment: Shipment? = null
+class TrackerViewHelper(private val trackingSimulator: TrackingSimulator) {
+    private val _trackedShipments = mutableStateListOf<Shipment>()
+    val trackedShipments: SnapshotStateList<Shipment> = _trackedShipments
 
     fun trackShipment(id: String) {
-        // Simulate tracking a shipment
-        currentShipment = Shipment(id, "created", "N/A", "N/A")
-        currentShipment?.let { shipment ->
-            _shipmentId.value = shipment.id
-            _shipmentStatus.value = shipment.status
-            _expectedShipmentDeliveryDate.value = shipment.expectedDeliveryDate
-            _shipmentNotes.value = shipment.notes
-            _shipmentUpdateHistory.value = shipment.updateHistory
+        try {
+            val shipment = trackingSimulator.findShipment(id)
+            if (shipment != null) {
+                if (!_trackedShipments.contains(shipment)) {
+                    _trackedShipments.add(shipment)
+                    // Subscribe to changes in the shipment
+                    shipment.addObserver { updatedShipment ->
+                        // Update the tracked shipment in the list
+                        val index = _trackedShipments.indexOfFirst { it.id == updatedShipment.id }
+                        if (index != -1) {
+                            _trackedShipments[index] = updatedShipment
+                        }
+                    }
+                }
+            } else {
+                throw Exception("Shipment not found.")
+            }
+        } catch (e: Exception) {
+            println("Error tracking shipment: ${e.message}")
         }
     }
 
     fun stopTracking(id: String) {
-        // Simulate stopping tracking of a shipment
-        if (_shipmentId.value == id) {
-            _shipmentId.value = ""
-            _shipmentStatus.value = ""
-            _expectedShipmentDeliveryDate.value = ""
-            _shipmentNotes.value = listOf()
-            _shipmentUpdateHistory.value = listOf()
-            currentShipment = null
-        }
-    }
-
-    fun addUpdate(update: ShippingUpdate) {
-        currentShipment?.addUpdate(update)
-        currentShipment?.let { shipment ->
-            _shipmentStatus.value = shipment.status
-            _expectedShipmentDeliveryDate.value = shipment.expectedDeliveryDate
-            _shipmentNotes.value = shipment.notes
-            _shipmentUpdateHistory.value = shipment.updateHistory
+        val shipmentToRemove = _trackedShipments.find { it.id == id }
+        shipmentToRemove?.let {
+            it.removeObserver { /* Handle observer removal if needed */ }
+            _trackedShipments.remove(it)
         }
     }
 }

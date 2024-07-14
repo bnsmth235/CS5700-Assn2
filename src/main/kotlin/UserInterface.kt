@@ -1,19 +1,19 @@
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-class UserInterface {
-    private val trackerViewHelper = TrackerViewHelper()
+class UserInterface(private val simulator: TrackingSimulator) {
+    private val trackerViewHelper = TrackerViewHelper(simulator)
 
     @Composable
     fun createInterface() {
         var trackingId by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf("") }
-        var shipments by remember { mutableStateOf(mutableListOf<Shipment>()) }
 
         Column(
             modifier = Modifier
@@ -34,14 +34,10 @@ class UserInterface {
                     onClick = {
                         errorMessage = ""
                         try {
-                            trackerViewHelper.trackShipment(trackingId).let { shipment ->
-                                shipments.add(shipment)
-                                trackingId = "" // Clear tracking ID after successful track
-                            } ?: run {
-                                errorMessage = "Shipment not found."
-                            }
+                            simulator.findShipment(trackingId)
+                            trackerViewHelper.trackShipment(trackingId)
                         } catch (e: Exception) {
-                            errorMessage = "Error tracking shipment."
+                            errorMessage = "Shipment not found."
                         }
                     },
                     modifier = Modifier.weight(1f)
@@ -58,71 +54,62 @@ class UserInterface {
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Display tracked shipments
+            DisplayTrackedShipments()
+        }
+    }
+
+    @Composable
+    private fun DisplayTrackedShipments() {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Use snapshotStateListOf to ensure proper recomposition
+            val shipments = trackerViewHelper.trackedShipments.toList()
             shipments.forEach { shipment ->
-                displayShipment(shipment) {
-                    shipments.remove(shipment)
-                    trackerViewHelper.stopTracking(shipment.id)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                ShipmentCard(shipment, onRemove = { trackerViewHelper.stopTracking(shipment.id) })
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 
     @Composable
-    fun displayShipment(shipment: Shipment, onStopTracking: () -> Unit) {
+    private fun ShipmentCard(shipment: Shipment, onRemove: () -> Unit) {
         Card(
-            elevation = 4.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            elevation = 4.dp
         ) {
             Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.padding(16.dp)
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // Display shipment details
-                    Text("Shipment ID: ${shipment.id}")
-                    IconButton(
-                        onClick = {
-                            onStopTracking()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "Stop Tracking"
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text("Status: ${trackerViewHelper.shipmentStatus.value}")
-                Text("Location: ${trackerViewHelper.shipmentLocation.value}")
-                Text("Expected Delivery Date: ${trackerViewHelper.expectedShipmentDeliveryDate.value}")
+                Text("Shipment ID: ${shipment.id}")
+                Text("Status: ${shipment.status}")
+                Text("Location: ${shipment.location}")
+                Text("Expected Delivery Date: ${shipment.expectedDeliveryDate}")
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text("Notes:")
-                trackerViewHelper.shipmentNotes.value.forEach { note ->
+                shipment.notes.forEach { note ->
                     Text(note)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text("Update History:")
-                trackerViewHelper.shipmentUpdateHistory.value.forEach { update ->
+                shipment.updateHistory.forEach { update ->
                     Text(update)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = onRemove
+                ) {
+                    Text("Stop Tracking")
                 }
             }
         }
     }
-}
-
-private fun <E> MutableList<E>.add(element: Unit) {
-
 }

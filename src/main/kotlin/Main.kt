@@ -1,21 +1,28 @@
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import kotlinx.coroutines.*
 
 @Composable
-@Preview
-fun App() {
+fun App(simulator: TrackingSimulator) {
     MaterialTheme {
-        UserInterface().createInterface()
+        UserInterface(simulator).createInterface()
     }
 }
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication) {
-        App()
-        val simulator = TrackingSimulator()
-        simulator.runSimulation("tracking.txt")
+    val simulator = TrackingSimulator()
+
+    // Launch the simulation in a coroutine scope
+    GlobalScope.launch {
+        simulator.runSimulation("test.txt")
+    }
+
+    Window(onCloseRequest = {
+        simulator.stopSimulation()
+        exitApplication()
+    }) {
+        App(simulator)
     }
 }
